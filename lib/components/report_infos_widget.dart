@@ -51,7 +51,7 @@ class ReportInfosWidget extends StatelessWidget {
             margin: const EdgeInsets.only(right: 100),
             height: 50,
             decoration: BoxDecoration(
-              color: Color(0xFFD9D9D9),
+              color: Color(0xFFEEEEEE),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(10),
                 bottomRight: Radius.circular(10),

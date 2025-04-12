@@ -60,7 +60,7 @@ class _ReportsPageState extends State<ReportsPage>
           ReportInfosWidget(
             tableNumber: 15,
             reportTime: "19:45",
-            predictedPercentage: 0.46,
+            predictedPercentage: 0.88,
           ),
 
           const SizedBox(height: 20),

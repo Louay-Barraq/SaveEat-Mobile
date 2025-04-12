@@ -45,6 +45,64 @@ class _DashboardPageState extends State<DashboardPage>
             isPercentage: false,
           ),
 
+          const SizedBox(height: 20),
+
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            height: 300,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: const [
+                BoxShadow(
+                  offset: Offset(0, 4),
+                  blurRadius: 4,
+                  spreadRadius: 0,
+                  color: Color(0x3F000000),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Title's box
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 30),
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCCCCCC),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        offset: Offset(0, 4),
+                        blurRadius: 4,
+                        spreadRadius: 0,
+                        color: Color(0x3F000000),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Weekly Waste Chart",
+                      style: const TextStyle(
+                        fontFamily: 'Inconsolata',
+                        fontWeight: FontWeight.w400,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Value's container
+                Expanded(
+                  child: Text("-")
+                ),
+              ],
+            ),
+          ),
+
 
         ],
       ),

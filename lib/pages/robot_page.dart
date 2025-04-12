@@ -44,8 +44,8 @@ class _RobotPageState extends State<RobotPage>
           const SizedBox(height: 20),
 
           OneInfoWidget(
-            title: "Monitored Tables",
-            percentageValue: 0.48,
+            title: "Battery Percentage",
+            percentageValue: 0.50,
             timeValue: '',
             numberValue: 0,
             isPercentage: true,
