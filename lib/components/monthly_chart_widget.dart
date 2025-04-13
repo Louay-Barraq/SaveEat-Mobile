@@ -136,7 +136,7 @@ class MonthlyWasteChart extends StatelessWidget {
             isCurved: true,
             color: lineColor,
             barWidth: 4,
-            belowBarData: BarAreaData(show: false), // No fill
+            belowBarData: BarAreaData(show: true), // No fill
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
