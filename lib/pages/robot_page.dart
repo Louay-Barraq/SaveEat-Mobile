@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:save_eat/components/action_button_widget.dart';
-import 'package:save_eat/components/dashboard_stats_widget.dart';
 import 'package:save_eat/components/day_date_widget.dart';
 import 'package:save_eat/components/one_info_widget.dart';
 import 'package:save_eat/components/section_indicator_widget.dart';
@@ -72,7 +71,15 @@ class _RobotPageState extends State<RobotPage>
 
           const SizedBox(height: 20),
 
-          ActionButtonWidget(title: "Return To Station"),
+          ActionButtonWidget(
+            title: "Return To Station",
+            onPressed: () {
+              // Action à exécuter lorsque le bouton est pressé
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Robot is returning to station')),
+              );
+            },
+          ),
 
           const SizedBox(height: 25),
 

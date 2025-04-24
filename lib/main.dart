@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:save_eat/pages/dashboard_page.dart';
+import 'package:save_eat/pages/qr_scan_page.dart';
 import 'package:save_eat/pages/reports_page.dart';
 import 'package:save_eat/pages/robot_page.dart';
 import 'package:save_eat/pages/settings_page.dart';
@@ -35,6 +36,7 @@ class _MainWrapperState extends State<MainWrapper> {
   final List<Widget> _pages = [
     const DashboardPage(),
     const RobotPage(),
+    const QrScanPage(),
     const ReportsPage(),
     const SettingsPage(),
   ];
@@ -42,6 +44,7 @@ class _MainWrapperState extends State<MainWrapper> {
   final List<String> _appBarTitles = [
     'DASHBOARD',
     'ROBOT',
+    'QR SCAN',
     'REPORTS',
     'SETTINGS'
   ];
@@ -127,6 +130,20 @@ class _MainWrapperState extends State<MainWrapper> {
               color: Colors.black,
             ),
             label: 'Robot',
+          ),
+          BottomNavigationBarItem(
+            icon: Image.asset(
+                'assets/icons/qr_code.png',
+                width: 24,
+                height: 24,
+                color: const Color(0xFF505050)),
+            activeIcon: Image.asset(
+              'assets/icons/qr_code.png',
+              width: 24,
+              height: 24,
+              color: Colors.black,
+            ),
+            label: 'QR Scan',
           ),
           BottomNavigationBarItem(
             icon: Image.asset(

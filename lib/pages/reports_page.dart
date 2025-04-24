@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:save_eat/components/dashboard_stats_widget.dart';
 import 'package:save_eat/components/day_date_widget.dart';
 import 'package:save_eat/components/one_info_widget.dart';
 import 'package:save_eat/components/report_infos_widget.dart';

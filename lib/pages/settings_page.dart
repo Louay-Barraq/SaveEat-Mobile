@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:save_eat/components/action_button_widget.dart';
-import 'package:save_eat/components/dashboard_stats_widget.dart';
 import 'package:save_eat/components/day_date_widget.dart';
 import 'package:save_eat/components/section_indicator_widget.dart';
 import 'package:save_eat/components/toggle_switch_component_widget.dart';
@@ -54,11 +53,27 @@ class _SettingsPageState extends State<SettingsPage>
 
           const SizedBox(height: 20),
 
-          ActionButtonWidget(title: "Account Settings"),
+          ActionButtonWidget(
+            title: "Account Settings",
+            onPressed: () {
+              // Action à exécuter lorsque le bouton est pressé
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account Settings pressed')),
+              );
+            },
+          ),
 
           const SizedBox(height: 20),
 
-          ActionButtonWidget(title: "Reports Settings"),
+          ActionButtonWidget(
+            title: "Reports Settings",
+            onPressed: () {
+              // Action à exécuter lorsque le bouton est pressé
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Reports Settings pressed')),
+              );
+            },
+          ),
 
         ],
       ),
