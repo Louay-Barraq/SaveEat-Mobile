@@ -1,0 +1,1 @@
+/home/louay/StudioProjects/SaveEat-Mobile/build/app/intermediates/cxx/Debug/3q2d1a33/obj/arm64-v8a
