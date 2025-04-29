@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:save_eat/components/colored_button_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 class QrScanPage extends StatefulWidget {
   const QrScanPage({super.key});
@@ -17,9 +21,26 @@ class _QrScanPageState extends State<QrScanPage>
   Barcode? result;
   QRViewController? controller;
   bool isScanning = false;
+  String? restaurant;
+  String? tableId;
+  String? errorMsg;
+  bool isSummoning = false;
+  final String mqttBroker = '192.168.1.116'; // Replace with your laptop's IP address
+  final String mqttTopic = '/tables/scan'; // Updated topic
+  late MqttServerClient mqttClient;
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    mqttClient = MqttServerClient(mqttBroker, 'flutter_client_${DateTime.now().millisecondsSinceEpoch}');
+    mqttClient.logging(on: false);
+    mqttClient.keepAlivePeriod = 20;
+    mqttClient.onConnected = () => debugPrint('MQTT Connected');
+    mqttClient.onDisconnected = () => debugPrint('MQTT Disconnected');
+  }
 
   @override
   void reassemble() {
@@ -44,6 +65,109 @@ class _QrScanPageState extends State<QrScanPage>
         SnackBar(content: Text('Could not launch $url')),
       );
     }
+  }
+
+  Future<void> _connectMqtt() async {
+    if (mqttClient.connectionStatus?.state == MqttConnectionState.connected) return;
+    try {
+      await mqttClient.connect();
+    } catch (e) {
+      setState(() { errorMsg = 'MQTT connect error: $e'; });
+    }
+  }
+
+  void _parseQr(String qr) {
+    // Accept QR codes like: clonedse://nav/restaurant/table_id
+    final uri = Uri.tryParse(qr);
+    if (uri == null) {
+      debugPrint('QR parse error: uri is null. Raw: $qr');
+      setState(() {
+        errorMsg = 'Invalid QR code';
+        restaurant = null;
+        tableId = null;
+      });
+      return;
+    }
+    if (uri.scheme != 'clonedse') {
+      debugPrint('QR parse error: scheme is not clonedse. Found: \'${uri.scheme}\'');
+      setState(() {
+        errorMsg = 'Invalid QR code';
+        restaurant = null;
+        tableId = null;
+      });
+      return;
+    }
+    if (!uri.path.startsWith('/nav/')) {
+      debugPrint('QR parse error: path does not start with /nav/. Found: \'${uri.path}\'');
+      setState(() {
+        errorMsg = 'Invalid QR code';
+        restaurant = null;
+        tableId = null;
+      });
+      return;
+    }
+    // Remove leading slash and split
+    final parts = uri.path.replaceFirst('/', '').split('/');
+    // parts should be: ['nav', 'restaurant', 'table_id']
+    if (parts.length != 3) {
+      debugPrint('QR parse error: path split parts != 3. Found: $parts');
+      setState(() {
+        errorMsg = 'Invalid QR code';
+        restaurant = null;
+        tableId = null;
+      });
+      return;
+    }
+    setState(() {
+      restaurant = parts[1];
+      tableId = parts[2];
+      errorMsg = null;
+    });
+  }
+
+  Future<void> _summonRobot() async {
+    if (restaurant == null || tableId == null) return;
+    setState(() { isSummoning = true; errorMsg = null; });
+    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final payload = jsonEncode({
+      'restaurant': restaurant,
+      'table_id': tableId,
+      'timestamp': timestamp,
+    });
+    await _connectMqtt();
+    try {
+      final builder = MqttClientPayloadBuilder();
+      builder.addString(payload);
+      mqttClient.publishMessage(mqttTopic, MqttQos.atLeastOnce, builder.payload!);
+      setState(() { errorMsg = null; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Robot summoned!')),
+      );
+    } catch (e) {
+      setState(() { errorMsg = 'Failed to summon robot: $e'; });
+    } finally {
+      setState(() { isSummoning = false; });
+    }
+  }
+
+  void _showSummonDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Summon'),
+        content: Text('Are you sure you want to summon the robot to table ${tableId?.replaceFirst('table_', '')} in restaurant $restaurant?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _summonRobot();
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -122,64 +246,43 @@ class _QrScanPageState extends State<QrScanPage>
             ),
 
           // Result area appears only when a QR code is scanned
-          if (result != null)
+          if (result != null && errorMsg == null && restaurant != null && tableId != null)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 15), // Reduced vertical padding
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               child: Column(
                 children: [
-                  // Scanned Code Title above the rectangle
-                  const Text(
-                    'Scanned Code',
-                    style: TextStyle(
+                  // Restaurant field
+                  Text(
+                    'Restaurant: $restaurant',
+                    style: const TextStyle(
                       fontFamily: 'Inconsolata',
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Code container
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '${result!.code}',
-                      style: const TextStyle(
-                        fontFamily: 'Inconsolata',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  // Table field
+                  Text(
+                    'Table: ${tableId!.replaceFirst('table_', '')}',
+                    style: const TextStyle(
+                      fontFamily: 'Inconsolata',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 15), // Reduced spacing
+                  const SizedBox(height: 15),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 50),
                     child: ColoredButtonWidget(
-                      text: "Process Data",
+                      text: isSummoning ? 'Summoning...' : 'Summon Robot',
                       backgroundColor: Colors.green,
-                      onPressed: () {
-                        // Launch URL if the QR code is a valid URL
-                        if (result?.code != null) {
-                          _launchUrl(result!.code!);
-                        }
-                      },
+                      onPressed: isSummoning ? null : _showSummonDialog,
                       height: 50,
                       width: 185,
                       borderRadius: 10,
                     ),
                   ),
-                  const SizedBox(height: 12), // Reduced spacing
-                  // Scan Again button with ColoredButtonWidget style in grey
+                  const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 50),
                     child: ColoredButtonWidget(
@@ -188,18 +291,49 @@ class _QrScanPageState extends State<QrScanPage>
                       onPressed: () {
                         setState(() {
                           result = null;
-                          // Keep the camera active when resetting
+                          restaurant = null;
+                          tableId = null;
+                          errorMsg = null;
                           isScanning = true;
-                          controller?.resumeCamera();
                         });
+                        controller?.resumeCamera();
                       },
                       height: 50,
                       width: 185,
                       borderRadius: 10,
                     ),
                   ),
-                  // Added small padding at the bottom to prevent overflow
                   const SizedBox(height: 5),
+                ],
+              ),
+            ),
+          if (errorMsg != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              child: Column(
+                children: [
+                  Text(
+                    errorMsg!,
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  ColoredButtonWidget(
+                    text: "Scan Again",
+                    backgroundColor: Colors.grey.shade600,
+                    onPressed: () {
+                      setState(() {
+                        result = null;
+                        restaurant = null;
+                        tableId = null;
+                        errorMsg = null;
+                        isScanning = true;
+                      });
+                      controller?.resumeCamera();
+                    },
+                    height: 50,
+                    width: 185,
+                    borderRadius: 10,
+                  ),
                 ],
               ),
             ),
@@ -277,6 +411,7 @@ class _QrScanPageState extends State<QrScanPage>
           result = scanData;
           controller.pauseCamera();
         });
+        _parseQr(scanData.code!);
       }
     });
   }
