@@ -5,7 +5,6 @@ class ReportInfosWidget extends StatelessWidget {
   final String reportTime;
   final double predictedPercentage;
 
-
   const ReportInfosWidget({
     super.key,
     required this.tableNumber,
@@ -14,12 +13,15 @@ class ReportInfosWidget extends StatelessWidget {
   });
 
   Color _getBorderColor() {
-    // Ensure that primaryValue is clamped between 0 and 1
-    double percentage = predictedPercentage.clamp(0.0, 1.0);
+    // Ensure that predictedPercentage is not null and is a valid number
+    double percentage =
+        (predictedPercentage.isNaN || predictedPercentage.isInfinite)
+            ? 0.0
+            : predictedPercentage.clamp(0.0, 1.0);
     // Map percentage to a hue value (0 = red, 120 = green)
-    double hue = percentage * 120;
+    double hue = (120 - (percentage * 120)).clamp(0.0, 120.0);
     // Convert HSV to Color. Full saturation and brightness.
-    return HSVColor.fromAHSV(1.0, 120 - hue, 1.0, 1.0).toColor();
+    return HSVColor.fromAHSV(1.0, hue, 1.0, 1.0).toColor();
   }
 
   String _formatPercentageValue() {
@@ -28,6 +30,10 @@ class ReportInfosWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String displayTableNumber = tableNumber.toString();
+    if (displayTableNumber.length > 5) {
+      displayTableNumber = displayTableNumber.substring(0, 5) + '...';
+    }
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       height: 180,
@@ -78,7 +84,7 @@ class ReportInfosWidget extends StatelessWidget {
                       ),
                     ),
                     TextSpan(
-                      text: "$tableNumber",
+                      text: displayTableNumber,
                       style: const TextStyle(
                         fontFamily: 'Inconsolata',
                         fontWeight: FontWeight.w500,

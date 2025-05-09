@@ -16,24 +16,20 @@ class DashboardStatsWidget extends StatelessWidget {
   });
 
   Color _getBorderColor() {
-    // TO BE IMPLEMENTED : The difference between the border coloring if the value is a percentage or not
     if (isPercentage) {
-      // Ensure that primaryValue is clamped between 0 and 1
-      double percentage = (primaryValue - comparisonValue).clamp(0.0, 1.0);
+      // Ensure that the difference is a valid number and clamp between 0 and 1
+      double diff = primaryValue - comparisonValue;
+      double percentage =
+          (diff.isNaN || diff.isInfinite) ? 0.0 : diff.clamp(0.0, 1.0);
       // Map percentage to a hue value (0 = red, 120 = green)
-      double hue = (primaryValue - comparisonValue) * 120;
-      // Convert HSV to Color. Full saturation and brightness.
+      double hue = (percentage * 120).clamp(0.0, 120.0);
       return HSVColor.fromAHSV(1.0, hue, 1.0, 1.0).toColor();
     } else {
-      // Ensure that primaryValue is clamped between 0 and 1
       double percentage = (primaryValue - comparisonValue).clamp(0.0, 1.0);
-      // Map percentage to a hue value (0 = red, 120 = green)
-      double hue = percentage * 120;
-      // Convert HSV to Color. Full saturation and brightness.
+      double hue = (percentage * 120).clamp(0.0, 120.0);
       return HSVColor.fromAHSV(1.0, hue, 1.0, 1.0).toColor();
     }
   }
-
 
   String _formatValue(double value, bool isComparisonValue) {
     final formatter = NumberFormat();
@@ -48,8 +44,7 @@ class DashboardStatsWidget extends StatelessWidget {
         ..maximumFractionDigits = 1;
       return '${formatter.format(value * 100)} %';
     } else {
-      formatter
-        .maximumFractionDigits = 0;
+      formatter.maximumFractionDigits = 0;
       return formatter.format(value);
     }
   }

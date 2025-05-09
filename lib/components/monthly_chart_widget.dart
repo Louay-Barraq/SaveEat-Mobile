@@ -71,7 +71,8 @@ class MonthlyWasteChart extends StatelessWidget {
   }
 
   Widget _buildChart() {
-    const lineColor = Colors.blue; // Color defined inside component
+    final lineColor = Color.alphaBlend(const Color.fromARGB(179, 255, 255, 255),
+        Colors.blue); // Match WeeklyWasteChart
 
     return LineChart(
       LineChartData(
@@ -119,36 +120,60 @@ class MonthlyWasteChart extends StatelessWidget {
           drawVerticalLine: true,
           horizontalInterval: 25,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.withOpacity(0.2),
+            color: Color.alphaBlend(
+                const Color.fromARGB(204, 255, 255, 255), Colors.grey),
             strokeWidth: 1,
           ),
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          border: Border.all(
+              color: Color.alphaBlend(
+                  const Color.fromARGB(179, 255, 255, 255), Colors.grey)),
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: [
-              for (int i = 0; i < weeklyData.length; i++)
-                FlSpot(i.toDouble(), weeklyData[i]),
-            ],
+            spots: weeklyData
+                .asMap()
+                .entries
+                .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
+                .toList(),
             isCurved: true,
             color: lineColor,
             barWidth: 4,
-            belowBarData: BarAreaData(show: true), // No fill
+            belowBarData: BarAreaData(
+              show: true,
+              color: Color.alphaBlend(
+                  const Color.fromARGB(77, 255, 255, 255), Colors.blue),
+            ),
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
                   FlDotCirclePainter(
                 radius: 4,
-                color: lineColor,
+                color: Color.alphaBlend(
+                    const Color.fromARGB(77, 255, 255, 255), Colors.blue),
                 strokeWidth: 2,
                 strokeColor: Colors.white,
               ),
             ),
           ),
         ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                return LineTooltipItem(
+                  '${spot.y.toStringAsFixed(1)}%',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }

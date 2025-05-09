@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class WeeklyWasteChart extends StatelessWidget {
-  final List<double> weeklyData; // Values for Mon-Sun (0-6)
+  final List<double> weeklyData; // Values for 7 days
+  final List<String> labels; // Dynamic day labels
 
   const WeeklyWasteChart({
     super.key,
     required this.weeklyData,
+    required this.labels,
   });
 
   @override
@@ -96,14 +98,19 @@ class WeeklyWasteChart extends StatelessWidget {
               reservedSize: 32,
               interval: 1,
               getTitlesWidget: (value, meta) {
-                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                if (value.toInt() != value || value < 0 || value > 6) {
+                if (value.toInt() != value ||
+                    value < 0 ||
+                    value >= labels.length) {
                   return const SizedBox.shrink();
                 }
+
+                final index = value.toInt();
+                final label = index < labels.length ? labels[index] : '';
+
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
-                    days[value.toInt()],
+                    label,
                     style: const TextStyle(fontSize: 12),
                   ),
                 );
@@ -115,33 +122,64 @@ class WeeklyWasteChart extends StatelessWidget {
         ),
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: false,
+          drawVerticalLine: true,
           horizontalInterval: 25,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.withOpacity(0.2),
+            color: Color.alphaBlend(
+                const Color.fromARGB(204, 255, 255, 255), Colors.grey),
             strokeWidth: 1,
           ),
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          border: Border.all(
+              color: Color.alphaBlend(
+                  const Color.fromARGB(179, 255, 255, 255), Colors.grey)),
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: [
-              for (int i = 0; i < weeklyData.length; i++)
-                FlSpot(i.toDouble(), weeklyData[i]),
-            ],
+            spots: weeklyData
+                .asMap()
+                .entries
+                .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
+                .toList(),
             isCurved: true,
-            color: Colors.blue,
+            color: Color.alphaBlend(
+                const Color.fromARGB(179, 255, 255, 255), Colors.blue),
             barWidth: 4,
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.3),
+              color: Color.alphaBlend(
+                  const Color.fromARGB(77, 255, 255, 255), Colors.blue),
             ),
-            dotData: FlDotData(show: true),
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                radius: 4,
+                color: Color.alphaBlend(
+                    const Color.fromARGB(77, 255, 255, 255), Colors.blue),
+                strokeWidth: 2,
+                strokeColor: Colors.white,
+              ),
+            ),
           ),
         ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                return LineTooltipItem(
+                  '${spot.y.toStringAsFixed(1)}%',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }
