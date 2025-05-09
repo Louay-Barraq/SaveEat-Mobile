@@ -3,7 +3,10 @@ import 'package:save_eat/components/day_date_widget.dart';
 import 'package:save_eat/components/one_info_widget.dart';
 import 'package:save_eat/components/report_infos_widget.dart';
 import 'package:save_eat/components/section_indicator_widget.dart';
-
+import 'package:save_eat/services/supabase_service.dart';
+import 'package:save_eat/models/waste_entry_model.dart';
+import 'package:save_eat/models/table_model.dart';
+import 'package:intl/intl.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -14,65 +17,218 @@ class ReportsPage extends StatefulWidget {
 
 class _ReportsPageState extends State<ReportsPage>
     with AutomaticKeepAliveClientMixin {
-  // Add the mixin
+  final SupabaseService _supabaseService = SupabaseService();
+  late Stream<List<Map<String, dynamic>>> _todayReportsStream;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
-  bool get wantKeepAlive => true; // Required override for preservation
+  void initState() {
+    super.initState();
+    _setupReportsStream();
+  }
+
+  void _setupReportsStream() {
+    try {
+      final now = DateTime.now();
+      // Set time to exactly midnight for startOfDay
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      // Set time to 23:59:59 for endOfDay
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+      _todayReportsStream = _supabaseService
+          .streamTodayWasteEntriesWithTableNumber(startOfDay, endOfDay);
+
+      _errorMessage = null;
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error setting up reports stream: $e';
+      });
+    }
+  }
+
+  Future<void> _refreshReports() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Reset the stream to force a refresh
+      _setupReportsStream();
+
+      // Wait to allow the stream to initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error refreshing reports: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
+    return RefreshIndicator(
+      onRefresh: _refreshReports,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            DayDateWidget(),
+            const SizedBox(height: 20),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text('Error: $_errorMessage',
+                        style: const TextStyle(color: Colors.red)),
+                    ElevatedButton(
+                      onPressed: _refreshReports,
+                      child: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              )
+            else
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _todayReportsStream,
+                builder: (context, snapshot) {
+                  if (_isLoading ||
+                      snapshot.connectionState == ConnectionState.waiting &&
+                          !snapshot.hasData) {
+                    return Container(
+                      height: 150,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(),
+                    );
+                  }
 
-          DayDateWidget(),
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Text('Error loading reports: ${snapshot.error}',
+                              style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _refreshReports,
+                            child: const Text('Try Again'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-          const SizedBox(height: 20),
+                  final reports = snapshot.data ?? [];
 
-          OneInfoWidget(
-            title: "Reports Number",
-            percentageValue: 0, timeValue: "",
-            numberValue: 7,
-            isPercentage: false,
-            isTime: false,
-          ),
+                  return Column(
+                    children: [
+                      OneInfoWidget(
+                        title: "Reports Number",
+                        percentageValue: 0,
+                        timeValue: "",
+                        numberValue: reports.length,
+                        isPercentage: false,
+                        isTime: false,
+                      ),
+                      const SizedBox(height: 20),
+                      SectionIndicatorWidget(
+                        title: "Reports List",
+                        backgroundColor: Color(0xFFFFFFFF),
+                      ),
+                      const SizedBox(height: 20),
+                      if (reports.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('No reports for today.'),
+                        )
+                      else
+                        ...reports.map((entry) {
+                          // Debug print to log the entry structure
+                          debugPrint('Report entry: $entry');
 
-          const SizedBox(height: 20),
+                          // Safely extract table number
+                          int tableNumber = 0;
+                          if (entry['table_model'] != null) {
+                            if (entry['table_model'] is Map<String, dynamic>) {
+                              final tableModel =
+                                  entry['table_model'] as Map<String, dynamic>;
+                              if (tableModel.containsKey('table_number')) {
+                                tableNumber =
+                                    tableModel['table_number'] as int? ?? 0;
+                              }
+                            }
+                          }
 
-          SectionIndicatorWidget(
-            title: "Reports List",
-            backgroundColor: Color(0xFFFFFFFF),
-          ),
+                          // Safely extract report time
+                          String reportTime = '';
+                          if (entry['report_time'] != null) {
+                            final reportTimeRaw =
+                                entry['report_time'].toString();
+                            if (reportTimeRaw.length >= 5) {
+                              reportTime = reportTimeRaw.substring(0, 5);
+                            }
+                          }
 
-          const SizedBox(height: 20),
+                          // Fallback to timestamp if report_time is not available
+                          if (reportTime.isEmpty &&
+                              entry['timestamp'] != null) {
+                            try {
+                              final timestamp =
+                                  DateTime.parse(entry['timestamp'].toString());
+                              reportTime =
+                                  DateFormat('HH:mm').format(timestamp);
+                            } catch (e) {
+                              debugPrint('Error parsing timestamp: $e');
+                            }
+                          }
 
-          ReportInfosWidget(
-            tableNumber: 9,
-            reportTime: "20:15",
-            predictedPercentage: 0.07,
-          ),
+                          // Safely extract percentage
+                          double percentage = 0.0;
+                          if (entry['predicted_percentage'] != null) {
+                            try {
+                              percentage = entry['predicted_percentage']
+                                      is double
+                                  ? entry['predicted_percentage']
+                                  : double.parse(
+                                      entry['predicted_percentage'].toString());
+                            } catch (e) {
+                              debugPrint(
+                                  'Error parsing predicted_percentage: $e');
+                            }
+                          }
 
-          const SizedBox(height: 20),
-
-          ReportInfosWidget(
-            tableNumber: 15,
-            reportTime: "19:45",
-            predictedPercentage: 0.88,
-          ),
-
-          const SizedBox(height: 20),
-
-          ReportInfosWidget(
-            tableNumber: 2,
-            reportTime: "18:13",
-            predictedPercentage: 0.26,
-          ),
-
-          const SizedBox(height: 25),
-
-        ],
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: ReportInfosWidget(
+                              tableNumber: tableNumber,
+                              reportTime: reportTime,
+                              predictedPercentage: percentage,
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 25),
+                    ],
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }

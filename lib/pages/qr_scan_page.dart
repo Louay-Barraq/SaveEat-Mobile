@@ -4,9 +4,9 @@ import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:save_eat/components/colored_button_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:save_eat/components/qr_result_widget.dart';
 
 class QrScanPage extends StatefulWidget {
   const QrScanPage({super.key});
@@ -25,8 +25,9 @@ class _QrScanPageState extends State<QrScanPage>
   String? tableId;
   String? errorMsg;
   bool isSummoning = false;
-  final String mqttBroker = '192.168.1.116'; // Replace with your laptop's IP address
-  final String mqttTopic = '/tables/scan'; // Updated topic
+  final String mqttBroker =
+      '192.168.1.98'; // Replace with your laptop's IP address
+  final String mqttTopic = '/tables/scan';
   late MqttServerClient mqttClient;
 
   @override
@@ -35,7 +36,8 @@ class _QrScanPageState extends State<QrScanPage>
   @override
   void initState() {
     super.initState();
-    mqttClient = MqttServerClient(mqttBroker, 'flutter_client_${DateTime.now().millisecondsSinceEpoch}');
+    mqttClient = MqttServerClient(
+        mqttBroker, 'flutter_client_${DateTime.now().millisecondsSinceEpoch}');
     mqttClient.logging(on: false);
     mqttClient.keepAlivePeriod = 20;
     mqttClient.onConnected = () => debugPrint('MQTT Connected');
@@ -52,12 +54,6 @@ class _QrScanPageState extends State<QrScanPage>
     }
   }
 
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -68,11 +64,16 @@ class _QrScanPageState extends State<QrScanPage>
   }
 
   Future<void> _connectMqtt() async {
-    if (mqttClient.connectionStatus?.state == MqttConnectionState.connected) return;
+    if (mqttClient.connectionStatus?.state == MqttConnectionState.connected)
+      return;
     try {
       await mqttClient.connect();
     } catch (e) {
-      setState(() { errorMsg = 'MQTT connect error: $e'; });
+      setState(() {
+        errorMsg = 'MQTT connect error: $e';
+      });
+      // Retry connection after a delay
+      Future.delayed(const Duration(seconds: 5), () => _connectMqtt());
     }
   }
 
@@ -89,7 +90,8 @@ class _QrScanPageState extends State<QrScanPage>
       return;
     }
     if (uri.scheme != 'clonedse') {
-      debugPrint('QR parse error: scheme is not clonedse. Found: \'${uri.scheme}\'');
+      debugPrint(
+          'QR parse error: scheme is not clonedse. Found: \'${uri.scheme}\'');
       setState(() {
         errorMsg = 'Invalid QR code';
         restaurant = null;
@@ -98,7 +100,8 @@ class _QrScanPageState extends State<QrScanPage>
       return;
     }
     if (!uri.path.startsWith('/nav/')) {
-      debugPrint('QR parse error: path does not start with /nav/. Found: \'${uri.path}\'');
+      debugPrint(
+          'QR parse error: path does not start with /nav/. Found: \'${uri.path}\'');
       setState(() {
         errorMsg = 'Invalid QR code';
         restaurant = null;
@@ -127,7 +130,10 @@ class _QrScanPageState extends State<QrScanPage>
 
   Future<void> _summonRobot() async {
     if (restaurant == null || tableId == null) return;
-    setState(() { isSummoning = true; errorMsg = null; });
+    setState(() {
+      isSummoning = true;
+      errorMsg = null;
+    });
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final payload = jsonEncode({
       'restaurant': restaurant,
@@ -138,15 +144,22 @@ class _QrScanPageState extends State<QrScanPage>
     try {
       final builder = MqttClientPayloadBuilder();
       builder.addString(payload);
-      mqttClient.publishMessage(mqttTopic, MqttQos.atLeastOnce, builder.payload!);
-      setState(() { errorMsg = null; });
+      mqttClient.publishMessage(
+          mqttTopic, MqttQos.atLeastOnce, builder.payload!);
+      setState(() {
+        errorMsg = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Robot summoned!')),
       );
     } catch (e) {
-      setState(() { errorMsg = 'Failed to summon robot: $e'; });
+      setState(() {
+        errorMsg = 'Failed to summon robot: $e';
+      });
     } finally {
-      setState(() { isSummoning = false; });
+      setState(() {
+        isSummoning = false;
+      });
     }
   }
 
@@ -155,15 +168,41 @@ class _QrScanPageState extends State<QrScanPage>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Summon'),
-        content: Text('Are you sure you want to summon the robot to table ${tableId?.replaceFirst('table_', '')} in restaurant $restaurant?'),
+        backgroundColor: Colors.white,
+        content: Text(
+          'Are you sure you want to summon the robot to table ${tableId?.replaceFirst('table_', '')} ?',
+          style: TextStyle(
+            fontFamily: 'Inconsolata',
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'Inconsolata',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 18,
+                  color: Color(0x6F000000),
+                ),
+              )),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _summonRobot();
             },
-            child: const Text('Confirm'),
+            child: const Text(
+              'Confirm',
+              style: TextStyle(
+                fontFamily: 'Inconsolata',
+                fontWeight: FontWeight.w500,
+                fontSize: 18,
+                color: Colors.green,
+              ),
+            ),
           ),
         ],
       ),
@@ -175,21 +214,18 @@ class _QrScanPageState extends State<QrScanPage>
     super.build(context);
 
     final Size screenSize = MediaQuery.of(context).size;
-    final scanAreaSize =
-        screenSize.width * 0.90; // Increased scanner square size
+    final scanAreaSize = screenSize.width * 0.80;
 
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Adjust vertical spacing to position the QR scanner higher
-          const SizedBox(height: 20), // Reduced from 30 to 20
+          const SizedBox(height: 20),
 
           // QR Scanner Area - Fixed position regardless of scanning state
           Container(
             width: scanAreaSize,
             height: scanAreaSize,
-            margin: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 5), // Reduced vertical margin
+            margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               boxShadow: const [
@@ -209,8 +245,7 @@ class _QrScanPageState extends State<QrScanPage>
           // Scan or Cancel button appears below the QR Scanner
           if (!isScanning)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 15, horizontal: 50), // Reduced vertical padding
+              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
               child: ColoredButtonWidget(
                 text: "Scan",
                 backgroundColor: Colors.green,
@@ -228,8 +263,7 @@ class _QrScanPageState extends State<QrScanPage>
           // Cancel button appears in the same position as the scan button
           if (isScanning && result == null)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 15, horizontal: 50), // Reduced vertical padding
+              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
               child: ColoredButtonWidget(
                 text: "Cancel",
                 backgroundColor: Colors.red,
@@ -246,65 +280,26 @@ class _QrScanPageState extends State<QrScanPage>
             ),
 
           // Result area appears only when a QR code is scanned
-          if (result != null && errorMsg == null && restaurant != null && tableId != null)
+          if (result != null &&
+              errorMsg == null &&
+              restaurant != null &&
+              tableId != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: Column(
-                children: [
-                  // Restaurant field
-                  Text(
-                    'Restaurant: $restaurant',
-                    style: const TextStyle(
-                      fontFamily: 'Inconsolata',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Table field
-                  Text(
-                    'Table: ${tableId!.replaceFirst('table_', '')}',
-                    style: const TextStyle(
-                      fontFamily: 'Inconsolata',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 50),
-                    child: ColoredButtonWidget(
-                      text: isSummoning ? 'Summoning...' : 'Summon Robot',
-                      backgroundColor: Colors.green,
-                      onPressed: isSummoning ? null : _showSummonDialog,
-                      height: 50,
-                      width: 185,
-                      borderRadius: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 50),
-                    child: ColoredButtonWidget(
-                      text: "Scan Again",
-                      backgroundColor: Colors.grey.shade600,
-                      onPressed: () {
-                        setState(() {
-                          result = null;
-                          restaurant = null;
-                          tableId = null;
-                          errorMsg = null;
-                          isScanning = true;
-                        });
-                        controller?.resumeCamera();
-                      },
-                      height: 50,
-                      width: 185,
-                      borderRadius: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                ],
+              child: QrResultWidget(
+                restaurant: restaurant!,
+                tableId: tableId!,
+                onSummon: _showSummonDialog,
+                onScanAgain: () {
+                  setState(() {
+                    result = null;
+                    restaurant = null;
+                    tableId = null;
+                    errorMsg = null;
+                    isScanning = true;
+                  });
+                  controller?.resumeCamera();
+                },
               ),
             ),
           if (errorMsg != null)
@@ -319,7 +314,7 @@ class _QrScanPageState extends State<QrScanPage>
                   const SizedBox(height: 12),
                   ColoredButtonWidget(
                     text: "Scan Again",
-                    backgroundColor: Colors.grey.shade600,
+                    backgroundColor: Colors.red,
                     onPressed: () {
                       setState(() {
                         result = null;
@@ -337,8 +332,7 @@ class _QrScanPageState extends State<QrScanPage>
                 ],
               ),
             ),
-          // Add bottom padding to ensure last elements are visible when scrolling
-          const SizedBox(height: 5),
+          const SizedBox(height: 15),
         ],
       ),
     );
