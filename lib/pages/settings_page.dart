@@ -73,7 +73,15 @@ class _SettingsPageState extends State<SettingsPage>
               onPressed: () {
                 Provider.of<AuthProvider>(context, listen: false).logout();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('You have been disconnected.')),
+                  SnackBar(
+                    content: const Text(
+                      'Logged out successfully',
+                      style: TextStyle(color: Colors.white, fontSize: 17.0),
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
               },
             ),
