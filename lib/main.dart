@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:save_eat/pages/dashboard_page.dart';
+import 'package:save_eat/pages/login_page.dart';
 import 'package:save_eat/pages/qr_scan_page.dart';
 import 'package:save_eat/pages/reports_page.dart';
 import 'package:save_eat/pages/robot_page.dart';
@@ -240,78 +241,5 @@ class _MainWrapperState extends State<MainWrapper> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-}
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _loading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Robot Login'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Robot Name'),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Enter robot name' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Enter password' : null,
-                ),
-                const SizedBox(height: 24),
-                _loading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            setState(() => _loading = true);
-                            final ok = await Provider.of<AuthProvider>(context,
-                                    listen: false)
-                                .login(_nameController.text,
-                                    _passwordController.text);
-                            setState(() => _loading = false);
-                            if (!ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Invalid credentials')),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text('Login'),
-                      ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
