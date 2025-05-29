@@ -6,6 +6,7 @@ class RobotModel {
   final double? batteryPercentage;
   final String? name;
   final String? passwordHash;
+  final String? restaurantId;
 
   RobotModel({
     required this.id,
@@ -15,6 +16,7 @@ class RobotModel {
     this.batteryPercentage,
     this.name,
     this.passwordHash,
+    this.restaurantId,
   });
 
   factory RobotModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class RobotModel {
     double? batteryPercentage;
     String? name;
     String? passwordHash;
+    String? restaurantId;
 
     try {
       // Handle required fields with fallbacks
@@ -36,6 +39,7 @@ class RobotModel {
       currentTableId = json['current_table_id']?.toString();
       name = json['name']?.toString();
       passwordHash = json['password_hash']?.toString();
+      restaurantId = json['restaurant_id']?.toString();
 
       // Handle datetime parsing safely
       if (json['last_active_at'] != null) {
@@ -68,6 +72,7 @@ class RobotModel {
       batteryPercentage: batteryPercentage,
       name: name,
       passwordHash: passwordHash,
+      restaurantId: restaurantId,
     );
   }
 
@@ -80,6 +85,7 @@ class RobotModel {
       'battery_percentage': batteryPercentage,
       'name': name,
       'password_hash': passwordHash,
+      'restaurant_id': restaurantId,
     };
   }
 }

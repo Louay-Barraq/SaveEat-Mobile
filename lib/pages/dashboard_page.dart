@@ -11,6 +11,7 @@ import 'package:save_eat/services/supabase_service.dart';
 import 'package:save_eat/utils/statistics_utils.dart';
 import 'package:save_eat/models/waste_entry_model.dart';
 import 'package:intl/intl.dart';
+import 'dart:math' as math;
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -90,9 +91,9 @@ class _DashboardPageState extends State<DashboardPage>
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             DayDateWidget(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Show error message if any
             if (_errorMessage != null)
@@ -192,7 +193,7 @@ class _DashboardPageState extends State<DashboardPage>
                   final List<double> weeklyAverages =
                       (weekly['averages'] is List<double>)
                           ? (weekly['averages'] as List<double>)
-                              .map((v) => v * 100)
+                              .map((v) => math.min(v * 100, 100.0))
                               .toList()
                           : List<double>.filled(7, 0.0);
 
@@ -206,7 +207,7 @@ class _DashboardPageState extends State<DashboardPage>
                   try {
                     monthlyAverages =
                         calculateMonthlyAverages(entries, referenceDate: today)
-                            .map((v) => v * 100)
+                            .map((v) => math.min(v * 100, 100.0))
                             .toList();
                   } catch (e) {
                     debugPrint('Error calculating monthly averages: $e');
@@ -224,9 +225,13 @@ class _DashboardPageState extends State<DashboardPage>
                     monthlyAverages = monthlyAverages.sublist(0, 4);
                   }
 
-                  // Waste by time of day (today)
-                  final wasteByTime =
+                  // Waste by time of day (today) - also clamping these values
+                  final Map<String, double> wasteByTime = {};
+                  final rawWasteByTime =
                       calculateWasteByMealTimeForDay(entries, today);
+                  for (final entry in rawWasteByTime.entries) {
+                    wasteByTime[entry.key] = math.min(entry.value, 100.0);
+                  }
 
                   return Column(
                     children: [
@@ -236,7 +241,7 @@ class _DashboardPageState extends State<DashboardPage>
                         comparisonValue: todayAvg - yesterdayAvg,
                         isPercentage: true,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       DashboardStatsWidget(
                         title: "Monitored Tables",
                         primaryValue: todayTables.toDouble(),
@@ -244,22 +249,22 @@ class _DashboardPageState extends State<DashboardPage>
                             todayTables.toDouble() - yesterdayTables.toDouble(),
                         isPercentage: false,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       WeeklyWasteChart(
                         weeklyData: weeklyAverages,
                         labels: weeklyLabels,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       MonthlyWasteChart(
                         weeklyData: monthlyAverages,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       WasteTimePieChart(
                         breakfastValue: wasteByTime['breakfast'] ?? 0.0,
                         lunchValue: wasteByTime['lunch'] ?? 0.0,
                         dinnerValue: wasteByTime['dinner'] ?? 0.0,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                     ],
                   );
                 } catch (e, stackTrace) {

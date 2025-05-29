@@ -15,6 +15,34 @@ class SupabaseService {
     return data.map((json) => RestaurantModel.fromJson(json)).toList();
   }
 
+  // Fetch a single restaurant by ID
+  Future<RestaurantModel?> fetchRestaurantById(String id) async {
+    final response =
+        await _client.from('restaurant').select().eq('id', id).maybeSingle();
+    if (response == null) return null;
+    return RestaurantModel.fromJson(response as Map<String, dynamic>);
+  }
+
+  // Fetch restaurant for a robot (assuming robots have a restaurant_id)
+  Future<RestaurantModel?> fetchRobotRestaurant(String robotId) async {
+    try {
+      // Use a direct join to get the restaurant information for the robot
+      final response = await _client
+          .from('robot_model')
+          .select('restaurant_id, restaurant!inner(*)')
+          .eq('id', robotId)
+          .single();
+
+      if (response == null || response['restaurant'] == null) return null;
+
+      return RestaurantModel.fromJson(
+          response['restaurant'] as Map<String, dynamic>);
+    } catch (e) {
+      print('Error fetching restaurant for robot: $e');
+      return null;
+    }
+  }
+
   // Table
   Future<List<TableModel>> fetchTables(String restaurantId) async {
     final response = await _client
@@ -108,6 +136,14 @@ class SupabaseService {
     }
     if (currentTableId != null) updateData['current_table_id'] = currentTableId;
     await _client.from('robot_model').update(updateData).eq('id', robotId);
+  }
+
+  // Assign a restaurant to a robot
+  Future<void> assignRestaurantToRobot(
+      String robotId, String restaurantId) async {
+    await _client
+        .from('robot_model')
+        .update({'restaurant_id': restaurantId}).eq('id', robotId);
   }
 
   // Fetch today's waste entries with table number (using join)

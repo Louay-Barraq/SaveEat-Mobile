@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
 
 class WeeklyWasteChart extends StatelessWidget {
   final List<double> weeklyData; // Values for 7 days
@@ -14,8 +15,10 @@ class WeeklyWasteChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 300,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 250, // Reduced height to prevent overflow
+      width:
+          MediaQuery.of(context).size.width - 32, // Explicit width constraint
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -32,7 +35,7 @@ class WeeklyWasteChart extends StatelessWidget {
         children: [
           // Title box - matching DashboardStatsWidget style
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 30),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             height: 45,
             decoration: BoxDecoration(
               color: const Color(0xFFCCCCCC),
@@ -63,7 +66,7 @@ class WeeklyWasteChart extends StatelessWidget {
           // Chart
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(8.0, 16.0, 8.0, 8.0),
               child: _buildChart(),
             ),
           ),
@@ -73,29 +76,35 @@ class WeeklyWasteChart extends StatelessWidget {
   }
 
   Widget _buildChart() {
+    // Clamp values between 0 and 100
+    final clampedData = weeklyData
+        .map((value) => math.min(math.max(value, 0), 100).toDouble())
+        .toList();
+
     return LineChart(
       LineChartData(
         minY: 0,
         maxY: 100,
         minX: 0,
         maxX: 6,
+        clipData: FlClipData.all(), // Clip data to prevent overflow
         titlesData: FlTitlesData(
           show: true,
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               interval: 25,
-              reservedSize: 40,
+              reservedSize: 30, // Reduced from 40
               getTitlesWidget: (value, meta) => Text(
                 '${value.toInt()}',
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 10), // Reduced from 12
               ),
             ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 32,
+              reservedSize: 25, // Reduced from 32
               interval: 1,
               getTitlesWidget: (value, meta) {
                 if (value.toInt() != value ||
@@ -108,10 +117,12 @@ class WeeklyWasteChart extends StatelessWidget {
                 final label = index < labels.length ? labels[index] : '';
 
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: const EdgeInsets.only(top: 5.0), // Reduced from 8.0
                   child: Text(
                     label,
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 10), // Reduced from 12
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 );
               },
@@ -138,7 +149,7 @@ class WeeklyWasteChart extends StatelessWidget {
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: weeklyData
+            spots: clampedData
                 .asMap()
                 .entries
                 .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
@@ -146,7 +157,7 @@ class WeeklyWasteChart extends StatelessWidget {
             isCurved: true,
             color: Color.alphaBlend(
                 const Color.fromARGB(179, 255, 255, 255), Colors.blue),
-            barWidth: 4,
+            barWidth: 3, // Reduced from 4
             belowBarData: BarAreaData(
               show: true,
               color: Color.alphaBlend(
@@ -156,10 +167,10 @@ class WeeklyWasteChart extends StatelessWidget {
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
                   FlDotCirclePainter(
-                radius: 4,
+                radius: 3, // Reduced from 4
                 color: Color.alphaBlend(
                     const Color.fromARGB(77, 255, 255, 255), Colors.blue),
-                strokeWidth: 2,
+                strokeWidth: 1, // Reduced from 2
                 strokeColor: Colors.white,
               ),
             ),
@@ -174,6 +185,7 @@ class WeeklyWasteChart extends StatelessWidget {
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 );
               }).toList();

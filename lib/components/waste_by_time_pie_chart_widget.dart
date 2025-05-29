@@ -68,8 +68,8 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
       onLongPressUp: () => _onSectionTouch(null), // Always reset on release
       onTapUp: (_) => _onSectionTouch(null), // Also reset on tap release
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        height: 340,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        height: 280, // Reduced from 340
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
@@ -85,7 +85,7 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
         child: Column(
           children: [
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 30),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
               height: 45,
               decoration: BoxDecoration(
                 color: const Color(0xFFCCCCCC),
@@ -126,21 +126,26 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
                           alignment: touchedIndex == null
                               ? Alignment.center
                               : Alignment.centerLeft,
-                          child: PieChart(
-                            PieChartData(
-                              startDegreeOffset: -90,
-                              centerSpaceRadius: touchedIndex != null ? 30 : 40,
-                              sectionsSpace: 2,
-                              sections: _buildSections(colors, names, values),
-                              pieTouchData: PieTouchData(
-                                enabled: true,
-                                touchCallback: (event, response) {
-                                  final idx = response
-                                      ?.touchedSection?.touchedSectionIndex;
-                                  _onSectionTouch(idx);
-                                },
+                          child: SizedBox(
+                            height: 180, // Added explicit height constraint
+                            child: PieChart(
+                              PieChartData(
+                                startDegreeOffset: -90,
+                                centerSpaceRadius: touchedIndex != null
+                                    ? 25
+                                    : 35, // Reduced radius
+                                sectionsSpace: 2,
+                                sections: _buildSections(colors, names, values),
+                                pieTouchData: PieTouchData(
+                                  enabled: true,
+                                  touchCallback: (event, response) {
+                                    final idx = response
+                                        ?.touchedSection?.touchedSectionIndex;
+                                    _onSectionTouch(idx);
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
                               ),
-                              borderData: FlBorderData(show: false),
                             ),
                           ),
                         ),
@@ -148,7 +153,7 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
                       // Add horizontal space and details only if holding and animation is completed
                       if (touchedIndex != null &&
                           _controller.status == AnimationStatus.completed)
-                        const SizedBox(width: 18),
+                        const SizedBox(width: 12), // Reduced from 18
                       if (touchedIndex != null &&
                           _controller.status == AnimationStatus.completed)
                         Expanded(
@@ -166,7 +171,7 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
             ),
             // Legend below the chart
             Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -174,7 +179,7 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
                   children: List.generate(
                     3,
                     (i) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: _LegendItem(
                         color: colors[i],
                         text: names[i],
@@ -206,12 +211,12 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
         color: sectionColor,
         title: isTouched ? '' : '${values[i].toStringAsFixed(1)}%',
         titleStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 12, // Reduced from 14
           fontWeight: FontWeight.bold,
           color: Colors.white,
           fontFamily: 'Inconsolata',
         ),
-        radius: isTouched ? 60 : 50,
+        radius: isTouched ? 50 : 45, // Reduced from 60/50
         titlePositionPercentageOffset: 0.6,
         showTitle: true,
         badgeWidget: null,
@@ -229,32 +234,32 @@ class _WasteTimePieChartState extends State<WasteTimePieChart>
         Row(
           children: [
             Container(
-              width: 16,
-              height: 16,
+              width: 14, // Reduced from 16
+              height: 14, // Reduced from 16
               decoration: BoxDecoration(
                 color: colors[touchedIndex!],
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6), // Reduced from 8
             Text(
               names[touchedIndex!],
               style: const TextStyle(
                 fontFamily: 'Inconsolata',
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: 18, // Reduced from 20
                 color: Colors.black,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8), // Reduced from 10
         Text(
           '${values[touchedIndex!].toStringAsFixed(1)}%',
           style: const TextStyle(
             fontFamily: 'Inconsolata',
             fontWeight: FontWeight.w500,
-            fontSize: 22,
+            fontSize: 20, // Reduced from 22
             color: Colors.black,
           ),
         ),
@@ -280,19 +285,19 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10, // Reduced from 12
+          height: 10, // Reduced from 12
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4), // Reduced from 6
         Text(
           '$text: ${value.toStringAsFixed(1)}%',
           style: const TextStyle(
             fontFamily: 'Inconsolata',
-            fontSize: 12,
+            fontSize: 11, // Reduced from 12
           ),
         ),
       ],

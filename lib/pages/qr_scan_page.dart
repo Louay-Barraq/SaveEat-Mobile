@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:save_eat/components/colored_button_widget.dart';
+import 'package:save_eat/utils/helper_funcs.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -150,7 +151,15 @@ class _QrScanPageState extends State<QrScanPage>
         errorMsg = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Robot summoned!')),
+        SnackBar(
+          content: const Text(
+            'Robot summoned successfully!',
+            style: TextStyle(color: Colors.white, fontSize: 17.0),
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } catch (e) {
       setState(() {
@@ -287,7 +296,7 @@ class _QrScanPageState extends State<QrScanPage>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               child: QrResultWidget(
-                restaurant: restaurant!,
+                restaurant: titleCase(restaurant!),
                 tableId: tableId!,
                 onSummon: _showSummonDialog,
                 onScanAgain: () {

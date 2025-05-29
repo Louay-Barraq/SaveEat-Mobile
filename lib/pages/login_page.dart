@@ -238,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                   if (_formKey.currentState!.validate()) {
                     setState(() => _loading = true);
                     final ok = await Provider.of<AuthProvider>(context, listen: false)
-                        .login(_nameController.text, _passwordController.text);
+                        .login(_nameController.text.trim(), _passwordController.text.trim());
                     setState(() => _loading = false);
 
                     if (!ok) {

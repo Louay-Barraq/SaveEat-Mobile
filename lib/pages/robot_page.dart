@@ -6,6 +6,7 @@ import 'package:save_eat/components/title_with_subtitle_widget.dart';
 import 'package:save_eat/components/one_info_widget.dart';
 import 'package:save_eat/components/section_indicator_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:save_eat/utils/helper_funcs.dart';
 import '../main.dart';
 
 class RobotPage extends StatefulWidget {
@@ -48,7 +49,7 @@ class _RobotPageState extends State<RobotPage>
             const SizedBox(height: 20),
             if (robot != null) ...[
               NameDisplayWidget(
-                name: robot.name ?? 'Robot',
+                name: titleCase(robot.name!) ?? 'Robot',
               ),
               const SizedBox(height: 20),
               SectionIndicatorWidget(
